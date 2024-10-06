@@ -114,6 +114,12 @@ class XiaomiCloudConnector:
             print("Invalid username.")
         return False
 
+    def get_profile(self):
+        url = 'https://hlth.io.mi.com/healthapp/user/get_miot_user_profile'
+        params = {}
+        data = self.execute_api_call_encrypted(url, params)
+        return None
+
     def get_homes(self, country):
         url = self.get_api_url(country) + "/v2/homeroom/gethome"
         params = {
@@ -169,6 +175,7 @@ class XiaomiCloudConnector:
         if response.status_code == 200:
             decoded = self.decrypt_rc4(self.signed_nonce(fields["_nonce"]), response.text)
             return json.loads(decoded)
+        print('code=', response.status_code)
         return None
 
     @staticmethod
@@ -281,6 +288,8 @@ def main():
     if logged:
         print("Logged in.")
         print()
+        connector.get_profile()
+        return 
         for current_server in servers:
             hh = []
             homes = connector.get_homes(current_server)
