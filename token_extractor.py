@@ -32,6 +32,7 @@ class XiaomiCloudConnector:
         self._code = None
         self._serviceToken = None
 
+    #  获取_sign
     def login_step_1(self):
         url = "https://account.xiaomi.com/pass/serviceLogin?sid=xiaomiio&_json=true"
         headers = {
@@ -42,11 +43,13 @@ class XiaomiCloudConnector:
             "userId": self._username
         }
         response = self._session.get(url, headers=headers, cookies=cookies)
-        valid = response.status_code == 200 and "_sign" in self.to_json(response.text)
+        json_resp = self.to_json(response.text) if response.status_code == 200 else {}
+        valid = response.status_code == 200 and "_sign" in json_resp
         if valid:
-            self._sign = self.to_json(response.text)["_sign"]
+            self._sign = json_resp["_sign"]
         return valid
 
+    #  获取ssecurity passToken code等
     def login_step_2(self):
         url = "https://account.xiaomi.com/pass/serviceLoginAuth2"
         headers = {
@@ -57,7 +60,7 @@ class XiaomiCloudConnector:
             "sid": "xiaomiio",
             "hash": hashlib.md5(str.encode(self._password)).hexdigest().upper(),
             "callback": "https://sts.api.io.mi.com/sts",
-            "qs": "%3Fsid%3Dxiaomiio%26_json%3Dtrue",
+            "qs": "%3Fsid%3Dxiaomiio%26_json%3Dtrue",  #  ?sid=xiaomiio&_json=true
             "user": self._username,
             "_sign": self._sign,
             "_json": "true"
@@ -66,6 +69,7 @@ class XiaomiCloudConnector:
         valid = response is not None and response.status_code == 200
         if valid:
             json_resp = self.to_json(response.text)
+            print('json_resp', json_resp)
             valid = "ssecurity" in json_resp and len(str(json_resp["ssecurity"])) > 4
             if valid:
                 self._ssecurity = json_resp["ssecurity"]
@@ -81,11 +85,13 @@ class XiaomiCloudConnector:
                     print()
         return valid
 
+    #  获取serviceToken
     def login_step_3(self):
         headers = {
             "User-Agent": self._agent,
             "Content-Type": "application/x-www-form-urlencoded"
         }
+        print('location', self._location)
         response = self._session.get(self._location, headers=headers)
         if response.status_code == 200:
             self._serviceToken = response.cookies.get("serviceToken")
@@ -118,8 +124,8 @@ class XiaomiCloudConnector:
         url = self.get_api_url(country) + "/v2/home/home_device_list"
         params = {
             "data": '{"home_owner": ' + str(owner_id) +
-            ',"home_id": ' + str(home_id) +
-            ',  "limit": 200,  "get_split_device": true, "support_smart_home": true}'
+                    ',"home_id": ' + str(home_id) +
+                    ',  "limit": 200,  "get_split_device": true, "support_smart_home": true}'
         }
         return self.execute_api_call_encrypted(url, params)
 
@@ -252,11 +258,14 @@ def main():
     servers = ["cn", "de", "us", "ru", "tw", "sg", "in", "i2"]
     servers_str = ", ".join(servers)
     print("Username (email or user ID):")
-    username = input()
+    username = 'huixiong.cn@gmail.com'
+    # username = input()
     print("Password:")
-    password = getpass("")
+    password = 'Ohmylady3'
+    # password = getpass("")
     print(f"Server (one of: {servers_str}) Leave empty to check all available:")
-    server = input()
+    server = 'cn'
+    # server = input()
     while server not in ["", *servers]:
         print(f"Invalid server provided. Valid values: {servers_str}")
         print("Server:")
